@@ -82,3 +82,27 @@ def change_password(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.post("/unlock")
+def unlock_vault(
+    payload: UnlockRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password",
+        )
+    vault_key = unwrap_vault_key(
+        user.wrapped_vault_key, payload.password, user.password_salt
+    )
+    vault_session.unlock(user.id, vault_key)
+    return {"status": "unlocked"}
+
+
+@router.post("/lock")
+def lock_vault(user: User = Depends(get_current_user)):
+    vault_session.lock(user.id)
+    return {"status": "locked"}
