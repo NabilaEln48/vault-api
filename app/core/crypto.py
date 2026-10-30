@@ -51,3 +51,18 @@ def decrypt_bytes(vault_key: bytes, token: bytes) -> bytes:
 
 def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def wrap_file_key(file_key: bytes, vault_key: bytes) -> bytes:
+    return Fernet(vault_key).encrypt(file_key)
+
+
+def unwrap_file_key(wrapped: bytes, vault_key: bytes) -> bytes:
+    try:
+        return Fernet(vault_key).decrypt(wrapped)
+    except InvalidToken:
+        raise ValueError("cannot unwrap file key") from None
+
+
+def derive_share_key(token: str) -> bytes:
+    return urlsafe_b64encode(hashlib.sha256(token.encode("utf-8")).digest())

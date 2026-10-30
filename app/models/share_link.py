@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, LargeBinary, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -13,6 +13,7 @@ class ShareLink(Base):
     token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     file_id: Mapped[int] = mapped_column(ForeignKey("vault_files.id"), index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    wrapped_file_key: Mapped[bytes] = mapped_column(LargeBinary)
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

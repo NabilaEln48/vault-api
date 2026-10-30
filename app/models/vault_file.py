@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, LargeBinary, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -15,6 +15,7 @@ class VaultFile(Base):
     content_type: Mapped[str] = mapped_column(String(128), default="application/octet-stream")
     size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     sha256: Mapped[str] = mapped_column(String(64))
+    wrapped_key: Mapped[bytes] = mapped_column(LargeBinary)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     folder_id: Mapped[int | None] = mapped_column(
         ForeignKey("folders.id"), nullable=True
