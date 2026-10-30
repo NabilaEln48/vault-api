@@ -156,3 +156,36 @@ def download_file(
             "Content-Disposition": f'attachment; filename="{row.original_name}"'
         },
     )
+
+
+@router.patch("/{file_id}", response_model=VaultFileOut)
+def update_file(
+    file_id: int,
+    payload: VaultFileUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    row = _get_file(db, file_id, user)
+    if payload.original_name is not None:
+        row.original_name = payload.original_name
+    if payload.folder_id is not None:
+        _get_owned_folder(db, payload.folder_id, user)
+        row.folder_id = payload.folder_id
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_file(
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    row = _get_file(db, file_id, user)
+    path = _user_dir(user.id) / row.stored_name
+    if path.exists():
+        path.unlink()
+    db.delete(row)
+    db.commit()
+    return None
