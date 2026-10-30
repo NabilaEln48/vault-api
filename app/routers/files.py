@@ -131,3 +131,28 @@ def get_file_metadata(
     db: Session = Depends(get_db),
 ):
     return _get_file(db, file_id, user)
+
+
+@router.get("/{file_id}/download")
+def download_file(
+    file_id: int,
+    vault_key: bytes = Depends(require_unlocked_vault),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    row = _get_file(db, file_id, user)
+    path = _user_dir(user.id) / row.stored_name
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Stored file is missing",
+        )
+    file_key = unwrap_file_key(row.wrapped_key, vault_key)
+    plaintext = decrypt_bytes(file_key, path.read_bytes())
+    return Response(
+        content=plaintext,
+        media_type=row.content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{row.original_name}"'
+        },
+    )
