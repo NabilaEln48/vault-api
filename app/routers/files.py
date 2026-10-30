@@ -100,3 +100,34 @@ async def upload_file(
     db.commit()
     db.refresh(row)
     return row
+
+
+@router.get("", response_model=list[VaultFileOut])
+def list_files(
+    q: str | None = None,
+    folder_id: int | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    query = db.query(VaultFile).filter(VaultFile.owner_id == user.id)
+    if q:
+        query = query.filter(VaultFile.original_name.ilike(f"%{q}%"))
+    if folder_id is not None:
+        query = query.filter(VaultFile.folder_id == folder_id)
+    return (
+        query.order_by(VaultFile.created_at.desc())
+        .limit(min(limit, 100))
+        .offset(offset)
+        .all()
+    )
+
+
+@router.get("/{file_id}", response_model=VaultFileOut)
+def get_file_metadata(
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return _get_file(db, file_id, user)
